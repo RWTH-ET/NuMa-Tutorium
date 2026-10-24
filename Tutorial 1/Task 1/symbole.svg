@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600">
+        <rect width="600" height="600" fill="white"/>
+        <text x="560" y="565">Re</text>
+        <text x="20" y="45">Im</text>
+<path d="M 60 60 V 540 M 60 540 H 540" stroke="lightgray"/>
+<text x="60" y="565" text-anchor="middle">-4</text>
+<text x="40" y="545" text-anchor="end">-4</text>
+<path d="M 180 60 V 540 M 60 420 H 540" stroke="lightgray"/>
+<text x="180" y="565" text-anchor="middle">-2</text>
+<text x="40" y="425" text-anchor="end">-2</text>
+<path d="M 300 60 V 540 M 60 300 H 540" stroke="lightgray"/>
+<text x="300" y="565" text-anchor="middle">0</text>
+<text x="40" y="305" text-anchor="end">0</text>
+<path d="M 420 60 V 540 M 60 180 H 540" stroke="lightgray"/>
+<text x="420" y="565" text-anchor="middle">2</text>
+<text x="40" y="185" text-anchor="end">2</text>
+<path d="M 540 60 V 540 M 60 60 H 540" stroke="lightgray"/>
+<text x="540" y="565" text-anchor="middle">4</text>
+<text x="40" y="65" text-anchor="end">4</text>
+<path d="M 60 300 H 540 M 300 60 V 540" stroke="black"/>
+<circle cx="348.66877681600005" cy="128.636270556" r="4"/>
+<circle cx="475.3447589541822" cy="480.961721892527" r="4"/>
+<circle cx="116.77312381172021" cy="121.21327297086174" r="4"/>
+<circle cx="110.80014082022078" cy="359.04706631496396" r="4"/>
+<circle cx="481.4357891239996" cy="491.623580404" r="4"/>
+<circle cx="485.50763958894527" cy="365.9669471973754" r="4"/>
+<circle cx="469.22466435689046" cy="97.46419517864908" r="4"/>
+<circle cx="110.38455761964372" cy="136.28965539677094" r="4"/>
+<circle cx="124.18639558799967" cy="244.3691237820003" r="4"/>
+<circle cx="237.62275423796484" cy="485.92891652378455" r="4"/>
+<circle cx="456.48637831441636" cy="89.33644731943852" r="4"/>
+<circle cx="490.82787238196175" cy="252.4762569672482" r="4"/>
+<circle cx="116.141783148" cy="476.43534613199995" r="4"/>
+<circle cx="367.05470126959096" cy="479.4083654337509" r="4"/>
+<circle cx="124.56416461834124" cy="481.40777953663815" r="4"/>
+<circle cx="232.8187014458921" cy="118.98227639375042" r="4"/>
+</svg>
