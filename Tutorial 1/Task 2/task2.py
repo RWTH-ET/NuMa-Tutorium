@@ -5,11 +5,11 @@ import matplotlib.pyplot as plt             # plt ist für die Visualisierung de
 # 1. Algorithmen definieren
 def dft(x):
     """Direkte DFT in O(N^2) mittels Matrixmultiplikation."""
-    N = len(x)                              #Länge des Eingangsvektors x
-    n = np.arange(N)                        #Erzeugt einen Vektor n = [0, 1, ..., N-1]
-    k = n.reshape((N, 1))                   #Erzeugt einen Spaltenvektor k = [[0], [1], ..., [N-1]]
-    e = np.exp(-2j * np.pi * k * n / N)     #Erzeugt die DFT-Matrix e, die die komplexen Exponentialfunktionen enthält
-    return np.dot(e, x)                     #Skalarprodukt der Matrix e mit dem Vektor x
+    N = len(x)                             
+    n = np.arange(N)
+    k = n.reshape((N, 1))
+    e = np.exp(-2j * np.pi * k * n / N)
+    return np.dot(e, x)
 
 def fft(x):
     """Rekursive Cooley-Tukey FFT in O(N log N)."""
@@ -58,13 +58,13 @@ for N in N_values:
 
 # 3. Empirische Steigungen berechnen (m = delta_y / delta_x im Log-Raum)
 log_N = np.log10(N_values)
-slope_dft, _ = np.polyfit(log_N, np.log10(times_dft), 1)
-slope_fft, _ = np.polyfit(log_N, np.log10(times_fft), 1)
+slope_dft, _ = np.polyfit(log_N, np.log10(times_dft), 1)    #Legt die Steigung der DFT-Zeit im Log-Log-Raum fest
+slope_fft, _ = np.polyfit(log_N, np.log10(times_fft), 1)    #_ ist eine Wegwerfvariable, die den Achsenabschnitt enthält, der hier nicht benötigt wird
 
 # 4. OFDM-Abschätzung
 print("\n=== OFDM-Symbole pro Sekunde ===")
 print(f"LTE (N=2048, Ziel: 14.000 Symbole/s):")
-print(f"  DFT: {int(1/time_lte_dft)} Symbole/s")
+print(f"  DFT: {int(1/time_lte_dft)} Symbole/s")            #Kehrt die Zeit in Symbole pro Sekunde um
 print(f"  FFT: {int(1/time_lte_fft)} Symbole/s")
 
 print(f"\n5G NR (N=4096, Ziel: 28.000 Symbole/s):")
