@@ -11,7 +11,7 @@ def kondition(h, N):
     betraege = []
     for k in range(N):
         h_dach = sum(
-            wert * cmath.exp(-2j * math.pi * k * n / N)
+            wert * cmath.exp(-2j * math.pi * k * n / N) 
             for n, wert in enumerate(h)
         )
         betraege.append(abs(h_dach))
