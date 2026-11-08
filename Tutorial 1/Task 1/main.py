@@ -31,7 +31,7 @@ def b_schaetze_h(X, Y):
     H_piloten = [Y[k] / X[k] for k in PILOTEN]
     h = []
     # Inverse 4-Punkt-DFT.
-    for n in range(4):
+    for n in range(4):  
         wert = sum(H_piloten[j] * exp(2j * pi * j * n / 4)
                    for j in range(4)) / 4
         h.append(wert)
