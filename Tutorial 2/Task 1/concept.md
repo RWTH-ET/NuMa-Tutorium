@@ -78,3 +78,59 @@ und durch die Summe der Faktoren teilen. Das Ergebnis ist die gesuchte Temperatu
 Für die reine Interpolation ist meist **baryzentrisch** vorzuziehen.
 Die Verstärkung gerundeter Daten bei vielen äquidistanten Stützstellen bleibt
 aber bei beiden Verfahren bestehen. Mehr Punkte bedeuten deshalb nicht automatisch mehr Genauigkeit.
+
+## Konditionszahl berechnen
+
+Die Konditionszahl beschreibt, wie empfindlich die Koeffizientenberechnung auf kleine Störungen reagiert.
+
+**Beispiel bei einer festen Matrix $V$:**
+
+- Konditionszahl: $\kappa_\infty(V)=1000$.
+- Relative Änderung der Temperaturdaten $T$: $0{,}01\,\%$.
+- Mögliche relative Änderung des Koeffizientenvektors $a$: bis zu $1000\cdot0{,}01\,\%=10\,\%$.
+
+Das ist eine **Schranke für den ungünstigsten Fall**, kein garantierter Fehler.
+Sie betrifft die Koeffizienten. Wie genau die berechneten Temperaturen tatsächlich sind, zeigt das Fehlerdiagramm.
+
+Hier verwenden wir die Unendlichnorm:
+
+$$
+\kappa_\infty(V)=\|V\|_\infty\cdot\|V^{-1}\|_\infty.
+$$
+
+
+**Beispiel mit den Referenzspannungen $0,1,2$:**
+
+$$
+V=\begin{pmatrix}
+1&0&0\\
+1&1&1\\
+1&2&4
+\end{pmatrix},
+\qquad
+V^{-1}=\begin{pmatrix}
+1&0&0\\
+-1{,}5&2&-0{,}5\\
+0{,}5&-1&0{,}5
+\end{pmatrix}.
+$$
+
+Für $V$ sind die Zeilensummen $1,3,7$, also $\|V\|_\infty=7$.
+Für $V^{-1}$ sind die Betragszeilensummen $1,4,2$, also $\|V^{-1}\|_\infty=4$.
+Damit ergibt sich:
+
+$$
+\boxed{\kappa_\infty(V)=7\cdot4=28}.
+$$
+
+
+```python
+kappa = np.linalg.cond(V, np.inf)
+```
+
+## Diagramme zu 1a und 1b
+
+- **1a – `1a_fehler_vandermonde.png`:** Maximaler Temperaturfehler von Vandermonde + Horner über dem Grad.
+- **1a – `1a_kondition.png`:** Konditionszahl der Vandermonde-Matrix über dem Grad.
+- **1b – `1b_fehlervergleich.png`:** Fehler beider Verfahren im gemeinsamen Diagramm.
+- **1b – `1b_abweichung_n20.png`:** Abweichungen von der exakten Temperatur über der Spannung bei Grad 20.
