@@ -5,100 +5,57 @@ import numpy as np
 
 
 ORDNER = Path(__file__).resolve().parent
-RUNDUNGSFEHLER = 0.005  # Halbe Anzeigestelle des Kalibrators in Grad Celsius.
+RUNDUNGSFEHLER = 0.005  # Halbe Anzeigestelle des Kalibrators in °C.
 
 
-def baryzentrische_gewichte(E_stuetz):
-    """Berechne die Gewichte einmal fuer die gegebenen Stuetzstellen."""
-    w = np.ones(len(E_stuetz))
-    for j in range(len(E_stuetz)):
+def baryzentrische_gewichte(x):
+    """Gewichte für die gegebenen Stützstellen einmalig berechnen."""
+    gewichte = np.ones(len(x))
+    for j in range(len(x)):
         produkt = 1.0
-        for k in range(len(E_stuetz)):
+        for k in range(len(x)):
             if j != k:
-                produkt = produkt * (E_stuetz[j] - E_stuetz[k])
-        w[j] = 1.0 / produkt
-
-    # Ein gemeinsamer Faktor kuerzt sich in der baryzentrischen Formel heraus.
-    w = w / np.max(np.abs(w))
-    return w
+                produkt *= x[j] - x[k]
+        gewichte[j] = 1.0 / produkt
+    return gewichte / np.max(np.abs(gewichte))
 
 
-def baryzentrische_basis(E_stuetz, w, E):
-    """Liefere die Lagrange-Basiswerte fuer eine einzelne Spannung E."""
-    differenzen = E - E_stuetz
-    treffer = np.flatnonzero(differenzen == 0)
-    if len(treffer) > 0:
-        # An einer Stuetzstelle ist deren Basiswert 1, alle anderen sind 0.
-        basis = np.zeros(len(E_stuetz))
-        basis[treffer[0]] = 1.0
-        return basis
+def berechne_fehler(x, y_exakt, y_kalibrator, E_raster, T_raster):
+    """Interpolationsfehler, Datenfehler und Schranke auf dem Prüfraster."""
+    gewichte = baryzentrische_gewichte(x)
+    p_exakt = []
+    p_kalibrator = []
+    lebesgue_werte = []
 
-    terme = w / differenzen
-    basis = terme / np.sum(terme)
-    return basis
+    for E in E_raster:
+        if E in x:
+            # An einer Stützstelle gilt direkt der zugehörige Stützwert.
+            basis = (x == E).astype(float)
+        else:
+            anteile = gewichte / (E - x)
+            basis = anteile / np.sum(anteile)
 
+        p_exakt.append(np.sum(basis * y_exakt))
+        p_kalibrator.append(np.sum(basis * y_kalibrator))
+        lebesgue_werte.append(np.sum(np.abs(basis)))
 
-def berechne_fehler(E_stuetz, T_exakt, T_kalibrator, E_raster, T_raster):
-    """Vergleiche beide Polynome und berechne die Schranke auf dem Pruefraster."""
-    w = baryzentrische_gewichte(E_stuetz)
-    p_exakt = np.zeros(len(E_raster))
-    p_kalibrator = np.zeros(len(E_raster))
-    lebesgue = np.zeros(len(E_raster))
-
-    for i, E in enumerate(E_raster):
-        basis = baryzentrische_basis(E_stuetz, w, E)
-        # Gleiche Stuetzstellen: Die Basis wird fuer beide Polynome verwendet.
-        p_exakt[i] = np.sum(basis * T_exakt)
-        p_kalibrator[i] = np.sum(basis * T_kalibrator)
-        lebesgue[i] = np.sum(np.abs(basis))
-
+    p_exakt = np.array(p_exakt)
+    p_kalibrator = np.array(p_kalibrator)
     e_interp = np.max(np.abs(p_exakt - T_raster))
     e_daten = np.max(np.abs(p_kalibrator - p_exakt))
-    lambda_raster = np.max(lebesgue)
-    schranke = lambda_raster * RUNDUNGSFEHLER
-    return e_interp, e_daten, lambda_raster, schranke
+    lambda_raster = np.max(lebesgue_werte)
+    return e_interp, e_daten, lambda_raster, lambda_raster * RUNDUNGSFEHLER
 
 
-def untersuche_stuetzstellen(art):
-    """Berechne die Fehler fuer n = 2 bis 40 und eine Stuetzstellenwahl."""
-    E_raster, T_raster = np.loadtxt(ORDNER / "pruefraster.csv").T
-    stuetzwerte = np.loadtxt(ORDNER / f"stuetzwerte_{art}.csv")
-    ergebnisse = []
-
-    print(f"\n{art}")
-    print(f"{'n':>3} {'Interpolation [C]':>19} {'Datenfehler [C]':>19} "
-          f"{'Lambda (Raster)':>18} {'Schranke [C]':>19}")
-
-    for n in range(2, 41):
-        daten_n = stuetzwerte[stuetzwerte[:, 0] == n]
-        E_stuetz = daten_n[:, 2]
-        T_exakt = daten_n[:, 3]
-        T_kalibrator = daten_n[:, 4]
-
-        if len(E_stuetz) != n + 1 or len(np.unique(E_stuetz)) != n + 1:
-            raise ValueError(f"Fuer n = {n} werden {n + 1} verschiedene Stuetzstellen benoetigt.")
-        if np.max(np.abs(T_kalibrator - T_exakt)) > RUNDUNGSFEHLER + 1e-10:
-            raise ValueError(f"Die Kalibratorwerte fuer n = {n} verletzen die Rundungsgrenze.")
-
-        e_interp, e_daten, lam, schranke = berechne_fehler(
-            E_stuetz, T_exakt, T_kalibrator, E_raster, T_raster)
-        ergebnisse.append([n, e_interp, e_daten, lam, schranke])
-        print(f"{n:3d} {e_interp:19.6e} {e_daten:19.6e} "
-              f"{lam:18.6e} {schranke:19.6e}")
-
-    return np.array(ergebnisse)
-
-
-def plotte_ergebnisse(art, name, ergebnisse):
-    """Speichere die drei geforderten Kurven in einem gemeinsamen Diagramm."""
-    n_werte = ergebnisse[:, 0]
+def plotte_ergebnisse(art, titel, ergebnisse):
+    n = ergebnisse[:, 0]
     plt.figure(figsize=(9, 5))
-    plt.semilogy(n_werte, ergebnisse[:, 1], "o-", label="Interpolationsfehler")
-    plt.semilogy(n_werte, ergebnisse[:, 2], "s-", label="Datenfehler")
-    plt.semilogy(n_werte, ergebnisse[:, 4], "--", label="Schranke: Λ (Prüfraster) · 0,005 °C")
+    plt.semilogy(n, ergebnisse[:, 1], "o-", label="Interpolationsfehler")
+    plt.semilogy(n, ergebnisse[:, 2], "s-", label="Datenfehler")
+    plt.semilogy(n, ergebnisse[:, 4], "--", label="Schranke: Λ (Prüfraster) · 0,005 °C")
     plt.xlabel("Polynomgrad n")
     plt.ylabel("Maximaler absoluter Fehler / Schranke [°C] (log)")
-    plt.title(f"Aufgabe 3b: {name}")
+    plt.title(f"Aufgabe 3b: {titel}")
     plt.grid(True, which="both", alpha=0.3)
     plt.legend()
     plt.tight_layout()
@@ -106,16 +63,30 @@ def plotte_ergebnisse(art, name, ergebnisse):
 
 
 def main():
-    for art, name in [("aequidistant", "Äquidistante Stützstellen"),
-                      ("tschebyscheff", "Tschebyscheff-Stützstellen")]:
-        ergebnisse = untersuche_stuetzstellen(art)
+    E_raster, T_raster = np.loadtxt(ORDNER / "pruefraster.csv").T
+
+    for art, titel in [("aequidistant", "Äquidistante Stützstellen"),
+                       ("tschebyscheff", "Tschebyscheff-Stützstellen")]:
+        stuetzwerte = np.loadtxt(ORDNER / f"stuetzwerte_{art}.csv")
+        ergebnisse = []
+
+        for n in range(2, 41):
+            daten = stuetzwerte[stuetzwerte[:, 0] == n]
+            x = daten[:, 2]  # Spannungen der Stützstellen.
+            y_exakt = daten[:, 3]
+            y_kalibrator = daten[:, 4]
+
+            fehler = berechne_fehler(x, y_exakt, y_kalibrator, E_raster, T_raster)
+            ergebnisse.append([n, *fehler])
+
+        ergebnisse = np.array(ergebnisse)
         np.savetxt(
             ORDNER / f"ergebnisse_{art}.csv", ergebnisse, delimiter=",",
             header="n,e_interp_C,e_daten_C,Lambda_pruefraster,Schranke_C",
             comments="", fmt=["%d", "%.12e", "%.12e", "%.12e", "%.12e"])
-        plotte_ergebnisse(art, name, ergebnisse)
+        plotte_ergebnisse(art, titel, ergebnisse)
 
-    print(f"\nDiagramme und Ergebnistabellen gespeichert in: {ORDNER}")
+    print(f"Diagramme und Ergebnistabellen gespeichert in: {ORDNER}")
     plt.show()
 
 

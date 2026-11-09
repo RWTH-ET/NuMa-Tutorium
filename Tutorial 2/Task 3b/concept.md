@@ -1,98 +1,60 @@
+
+Wir berechen das Polynom mit den gleichen Stützwerten mit der baryzentrischen Interpolation. Für die Temperatur bneutzen wir dabei aber einmal __den exakten Wert__ und einmal __den Kalibrator, der auf 0,01 °C gerundet ist__
+Dabei vergleichen wir auch __Äquidistante-__ und __Tschebyscheff-Stützstellen__ also gleichmäßig verteilte und rand-dichte.
+
+Wir vergleichen dann die Polynome und schauen uns nur die __maximale abweichung__ an. Das ist der Datenfehler (orange)
+(blaue) Kurve ist der Fehler zwischen Polynom aus exakten Stüzwerten und der tatsächlich echten Temperatur.
+(grün) Worst-Case Kurve. Lebesgue-Konstante aus Stützwerten * 0,005 °C
+
+Formel für die Lebesgue-Konstante auf dem Prüfraster:
+
+$$
+\Lambda_n^{(\mathrm{Raster})} = \max_{E\in\mathrm{Prüfraster}}
+\sum_{j=0}^{n}|\ell_j(E)|.
+$$
+
+$\ell_j(E)$ ist der Basiswert der $j$-ten Stützstelle an der Spannung $E$
+
+## => Woher kommt der Felher? Interpolation oder Rundung.
+
 # Aufgabe 3: Woher kommt der Fehler?
 
-Wir rechnen eine Thermospannung in eine Temperatur um. Aufgabe 3 untersucht,
-warum das Ergebnis von der exakten Temperatur abweicht:
+Bei der Umrechnung von Thermospannung in Temperatur entstehen drei Fehleranteile:
+Das Polynom nähert die echte Kennlinie nur an (**3a: Interpolationsfehler**),
+der Kalibrator rundet die bekannten Temperaturen (**3b: Datenfehler**), und
+der Rechner rundet bei der Berechnung (**3c: Koeffizientenfehler**).
 
-| Teil | Ursache | Was wird verglichen? |
-|---|---|---|
-| **3a: Interpolationsfehler** | Ein Polynom bildet die Kennlinie nur näherungsweise ab. | Polynom aus exakten Stützwerten mit der exakten Kennlinie |
-| **3b: Datenfehler** | Der Kalibrator liefert gerundete Temperaturen. | Polynom aus gerundeten mit dem Polynom aus exakten Stützwerten |
-| **3c: Koeffizientenfehler** | Bei der Koeffizientenberechnung und Auswertung entstehen Rundungsfehler im Rechner. | Vandermonde + Horner mit der baryzentrischen Referenz |
+## Datenfehler in 3b
 
-Dieser Ordner implementiert **3b**. Den Interpolationsfehler aus 3a berechnen
-wir für den geforderten Vergleich mit.
-
-## Zwei Polynome vergleichen
-
-Der Kalibrator rundet auf $0{,}01\,°C$. Ein Stützwert weicht deshalb höchstens
-um $0{,}005\,°C$ vom exakten Wert ab. Wir verwenden dieselben Spannungen,
-aber zwei unterschiedliche Temperaturspalten:
-
-- `T_exakt_C` ergibt das Polynom $p_{\mathrm{exakt}}$.
-- `T_kalibrator_C` ergibt das Polynom $p_{\mathrm{kalibrator}}$.
-
-Beide Polynome werden baryzentrisch ausgewertet, wie in Task 1 und 2.
-Für jede Spannung im Prüfraster berechnen wir die Differenz. Der größte
-Betrag ist der Datenfehler:
+Der Kalibrator zeigt Temperaturen auf $0{,}01\,°C$ gerundet an. Jeder Stützwert
+weicht daher höchstens um $0{,}005\,°C$ vom exakten Wert ab. Wir bilden aus den
+exakten und den gerundeten Werten jeweils ein Interpolationspolynom. Ihre größte
+Abweichung auf dem Prüfraster ist der **Datenfehler**:
 
 $$
-e_{\mathrm{daten}}=\max_{E\in\mathrm{Prüfraster}}
-|p_{\mathrm{kalibrator}}(E)-p_{\mathrm{exakt}}(E)|.
+e_{\mathrm{daten}} = \max_E |p_{\mathrm{kalibrator}}(E)-p_{\mathrm{exakt}}(E)|.
 $$
 
-Der Interpolationsfehler vergleicht dagegen $p_{\mathrm{exakt}}(E)$ mit
-der exakten Temperatur aus `pruefraster.csv`.
+Die **Lebesgue-Konstante** $\Lambda_n$ beschreibt, wie stark die Lage der
+Stützstellen kleine Datenfehler höchstens verstärken kann. Anders als $\pi$
+hat sie keinen festen Zahlenwert: Sie hängt von der Anzahl und der Lage der
+Stützstellen ab. Wir bestimmen sie näherungsweise mit der Formel oben.
+Zur Orientierung ergeben sich auf unserem Prüfraster ungefähr diese Werte:
 
-## Wie stark werden die Rundungsfehler verstärkt?
+| Polynomgrad | Äquidistant | Tschebyscheff |
+|---|---:|---:|
+| $n=10$ | $30$ | $2{,}44$ |
+| $n=20$ | $11\,000$ | $2{,}66$ |
 
-Aus den baryzentrischen Gewichten berechnen wir die Lagrange-Basiswerte:
+Je größer $\Lambda_n$ ist, desto stärker *können* Rundungsfehler verstärkt
+werden. Für den Datenfehler gilt auf dem Prüfraster die Schranke
 
 $$
-\ell_j(E)=\frac{w_j/(E-E_j)}{\sum_k w_k/(E-E_k)}.
+e_{\mathrm{daten}} \leq \Lambda_n^{(\mathrm{Raster})}\cdot 0{,}005\,°C.
 $$
 
-Damit gilt $p(E)=\sum_j\ell_j(E)T_j$. Die Summe der Beträge dieser
-Basiswerte beschreibt, wie stark sich Datenfehler im ungünstigsten Fall
-auswirken. Ihr Maximum ist die Lebesgue-Konstante $\Lambda_n$:
-
-$$
-e_{\mathrm{daten}}\leq\Lambda_n\cdot0{,}005\,°C.
-$$
-
-**Beispiel:** Bei $\Lambda_n=3$ beträgt die Schranke $0{,}015\,°C$.
-Der tatsächliche Datenfehler kann deutlich kleiner sein.
-
-Im Code bestimmen wir das Maximum über die 2000 Punkte des Prüfrasters.
-Die berechnete Schranke gilt damit für dieses Raster; sie ist kein Nachweis
-für das ganze kontinuierliche Intervall. Trifft eine Spannung genau eine
-Stützstelle, setzen wir deren Basiswert auf 1 und die übrigen auf 0.
-So vermeiden wir eine Division durch null.
-
-## Was zeigen die Ergebnisse?
-
-- **Kleine Grade:** Der Interpolationsfehler dominiert. Das Polynom bildet
-  die Kennlinie noch nicht ausreichend genau ab.
-- **Große Grade, äquidistant:** Der Datenfehler wächst stark, weil die
-  Stützstellenwahl die kleinen Rundungsfehler stark verstärkt. Das erklärt
-  die großen baryzentrischen Fehler aus Aufgabe 1. Ein gelegentlich kleinerer
-  Vandermonde-Fehler kann durch teilweise Aufhebung von Daten- und Rechenfehlern
-  entstehen und ist kein verlässlicher Genauigkeitsvorteil.
-- **Große Grade, Tschebyscheff:** Der Interpolationsfehler sinkt stark, der
-  Datenfehler bleibt im Bereich weniger Tausendstel Grad und dominiert schließlich.
-  Mehr Stützstellen machen die Kalibratorwerte nicht genauer.
-
-Mit den vorliegenden gerundeten Daten lässt sich der Fehler also nicht
-allein durch Erhöhen des Grades beliebig klein machen. Die Schranke selbst
-ist dabei eine Obergrenze, keine feste Untergrenze für den tatsächlichen Fehler.
-
-## Ausführen und Ausgaben
-
-Im Ordner `Task 3b`:
-
-```sh
-python -m pip install -r requirements.txt
-python main.py
-```
-
-Für beide Stützstellenwahlen werden die Grade $n=2,\ldots,40$ untersucht.
-Alle Dateipfade beziehen sich auf den Skriptordner. Die drei Eingabedateien
-sind unveränderte Kopien der Messdaten aus Task 1.
-
-- `3b_aequidistant.png` und `3b_tschebyscheff.png` zeigen jeweils
-  Interpolationsfehler, Datenfehler und Schranke mit logarithmischer Fehlerachse.
-- `ergebnisse_aequidistant.csv` und `ergebnisse_tschebyscheff.csv` enthalten
-  die zugehörigen Zahlen einschließlich der Lebesgue-Konstante auf dem Raster.
-
-Bei hohen äquidistanten Graden kann auch die baryzentrische Rechnung durch
-Rundungsfehler im Rechner beeinflusst werden. Die Ergebnisse sind daher
-numerische Messwerte, keine exakten Fehlerwerte.
+Wir vergleichen äquidistante und Tschebyscheff-Stützstellen. Bei vielen
+äquidistanten Punkten kann der Datenfehler stark wachsen. Mit
+Tschebyscheff-Stützstellen bleibt er deutlich kleiner, verschwindet durch
+mehr Punkte aber nicht automatisch. Die berechnete Schranke bezieht sich
+auf das Prüfraster, nicht auf jeden Punkt des gesamten Intervalls.
