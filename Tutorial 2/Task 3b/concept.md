@@ -15,6 +15,19 @@ $$
 
 $\ell_j(E)$ ist der Basiswert der $j$-ten Stützstelle an der Spannung $E$
 
+## Wiederverwendung der Funktionen aus Task 1
+
+`main.py` lädt `../Task 1/main.py` mit `importlib.util` als Modul `task1`.
+Die Experimente aus Task 1 werden dabei nicht gestartet, da ihr Aufruf durch
+`if __name__ == "__main__"` geschützt ist.
+
+`task1.baryzentrische_gewichte(x)` berechnet die Gewichte einmal pro Stützstellensatz.
+Mit denselben Gewichten wertet `task1.baryzentrisch(...)` das Polynom sowohl für
+die exakten als auch für die gerundeten Temperaturen aus. Diese Funktionen
+werden direkt aus Task 1 übernommen und hier nicht erneut implementiert.
+Nur die Basiswerte zur Berechnung der Lebesgue-Konstante werden zusätzlich
+in Task 3b bestimmt.
+
 ## => Woher kommt der Felher? Interpolation oder Rundung.
 
 # Aufgabe 3: Woher kommt der Fehler?
