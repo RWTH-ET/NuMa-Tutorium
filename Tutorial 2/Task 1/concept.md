@@ -1,136 +1,32 @@
-﻿Wir haben mehrere Referenzpunkte gegeben, für die eine spannung einer Temperatur zugeordnet ist. Wir müssen jetzt eine Kurve bauen um jeder Spannung einer Temperatur zuzuordnen. Dazu verwenden wir Vandermonde + Horner und baryzentrische Interpolation
+# Aufgabe 1 – Temperatur aus Spannung bestimmen
 
-## Vandermonde + Horner:
+Aus $n+1$ Referenzpaaren $(E_j,T_j)$ bestimmen wir ein Polynom $p$ vom Grad höchstens $n$. Es soll durch alle Stützpunkte gehen, also $p(E_j)=T_j$ erfüllen. Damit schätzen wir die Temperatur zwischen den bekannten Spannungen. Hier sind die Stützstellen gleichmäßig verteilt.
 
-**1. Vandermonde:**
+## 1a – Vandermonde und Horner
 
-Bei drei Referenzpunkten suchen wir ein Polynom vom Grad höchstens 2:
-
-$$
-p(E)=a_0+a_1E+a_2E^2.
-$$
-
-Die Koeffizienten $a_0,a_1,a_2$ sind noch unbekannt. Jeder bekannte Punkt
-aus Spannung $E_i$ und Temperatur $T_i$ liefert eine Gleichung:
+Wir schreiben $p(E)=a_0+a_1 E+\dots+a_n E^n$. Jeder bekannte Punkt liefert eine Gleichung für die unbekannten Koeffizienten. Die Zeile $j$ der Vandermonde-Matrix enthält deshalb die Potenzen von $E_j$.
 
 $$
-\begin{aligned}
-a_0+a_1E_0+a_2E_0^2 &= T_0,\\
-a_0+a_1E_1+a_2E_1^2 &= T_1,\\
-a_0+a_1E_2+a_2E_2^2 &= T_2.
-\end{aligned}
+V_{j,k}=E_j^k,\qquad V a=T,\qquad
+\kappa_\infty(V)=\|V\|_\infty\|V^{-1}\|_\infty.
 $$
 
-Die Faktoren $1,E_i,E_i^2$ bilden die Zeilen der Vandermonde-Matrix V. Es gilt also **V * a = T**
-Die Lösung des lin. Gleichungssystem ist a, unsere Polynomkurve.
+Nach dem Lösen des Systems setzt Horner die gesuchte Spannung durch wiederholtes Multiplizieren und Addieren ein. Bei Grad 2 wird aus $a_0+a_1 E+a_2 E^2$ zum Beispiel $a_0+E(a_1+Ea_2)$.
 
+Die Norm $\|\cdot\|_\infty$ ist die größte Summe der Beträge in einer Matrixzeile. Eine große Konditionszahl bedeutet, dass sich kleine Änderungen der Eingangsdaten stark auf die berechneten Koeffizienten auswirken können.
 
-**2. Horner (Optimierung):**
+## 1b – Baryzentrische Interpolation
 
-Horner gibt umwandlung des Polynoms:
-
-$$
-p(E)=a_0+a_1E+a_2E^2=a_0+E(a_1+Ea_2).
-$$
-Python klammert die Formel nicht automatisch nach Horner um -> unnötige Rechenleistung, da weniger multiplikationen
-
-## Baryzentrische Interpolation:
-
-Zuerst Gewicht für jeden Referenzpunkt:
+Wir berechnen Gewichte aus den Referenzspannungen. An einer gesuchten Spannung $E$ kombinieren wir damit die bekannten Temperaturen.
 
 $$
-w_j=\frac{1}{\prod_{k\ne j}(E_j-E_k)}.
+w_j=\frac{1}{\prod_{k\ne j}(E_j-E_k)},\qquad
+b_j(E)=\frac{w_j}{E-E_j},\qquad
+p(E)=\frac{\sum_j b_j(E)T_j}{\sum_j b_j(E)}.
 $$
 
-Bei drei Referenzpunkten ist zum Beispiel:
+Bei $E=E_j$ geben wir direkt $T_j$ zurück. Beide Rechenwege liefern in exakter Rechnung dasselbe Polynom. Die baryzentrische Formel kommt ohne das Gleichungssystem für die Koeffizienten aus.
 
-$$
-w_0=\frac{1}{(E_0-E_1)(E_0-E_2)}.
-$$
+## Diagramme lesen
 
-Sie hängen nur von den Referenzspannungen ab und werden einmal berechnet.
-Für eine gesuchte Spannung $E$ berechnen wir dann für jeden Referenzpunkt einen Faktor:
-
-$$
-b_j=\frac{w_j}{E-E_j}.
-$$
-
-Mit diesen Faktoren kombinieren wir die bekannten Temperaturen:
-
-$$
-p(E)=\frac{b_0T_0+b_1T_1+b_2T_2}{b_0+b_1+b_2}.
-$$
-
-Also: Jeden Faktor mit seiner Referenztemperatur multiplizieren, alles addieren
-und durch die Summe der Faktoren teilen. Das Ergebnis ist die gesuchte Temperatur.
-
-- Trifft $E$ genau eine Referenzspannung, geben wir direkt deren Temperatur zurück, damit keine Division durch null entsteht.
-- Es entsteht mathematisch dieselbe Polynomkurve wie bei Vandermonde.
-
-## Kurzer Vergleich
-
-| | Vandermonde + Horner | Baryzentrisch |
-|---|---|---|
-| Vorteil | Liefert die Polynomkoeffizienten; danach schnelle Auswertung mit Horner | Vermeidet das empfindliche Gleichungssystem für die Monomkoeffizienten |
-| Nachteil | Bei hohen Graden können Rundungsfehler stark verstärkt werden | Braucht Stützpunkte und Gewichte; mehr Divisionen pro Auswertung |
-| Sinnvoll, wenn ... | der Grad klein ist oder wir die Koeffizienten weiterverwenden wollen | wir das Interpolationspolynom möglichst zuverlässig auswerten wollen |
-
-Für die reine Interpolation ist meist **baryzentrisch** vorzuziehen.
-Die Verstärkung gerundeter Daten bei vielen äquidistanten Stützstellen bleibt
-aber bei beiden Verfahren bestehen. Mehr Punkte bedeuten deshalb nicht automatisch mehr Genauigkeit.
-
-## Konditionszahl berechnen
-
-Die Konditionszahl beschreibt, wie empfindlich die Koeffizientenberechnung auf kleine Störungen reagiert.
-
-**Beispiel bei einer festen Matrix $V$:**
-
-- Konditionszahl: $\kappa_\infty(V)=1000$.
-- Relative Änderung der Temperaturdaten $T$: $0{,}01\,\%$.
-- Mögliche relative Änderung des Koeffizientenvektors $a$: bis zu $1000\cdot0{,}01\,\%=10\,\%$.
-
-Das ist eine **Schranke für den ungünstigsten Fall**, kein garantierter Fehler.
-Sie betrifft die Koeffizienten. Wie genau die berechneten Temperaturen tatsächlich sind, zeigt das Fehlerdiagramm.
-
-Hier verwenden wir die Unendlichnorm:
-
-$$
-\kappa_\infty(V)=\|V\|_\infty\cdot\|V^{-1}\|_\infty.
-$$
-
-
-**Beispiel mit den Referenzspannungen $0,1,2$:**
-
-$$
-V=\begin{pmatrix}
-1&0&0\\
-1&1&1\\
-1&2&4
-\end{pmatrix},
-\qquad
-V^{-1}=\begin{pmatrix}
-1&0&0\\
--1{,}5&2&-0{,}5\\
-0{,}5&-1&0{,}5
-\end{pmatrix}.
-$$
-
-Für $V$ sind die Zeilensummen $1,3,7$, also $\|V\|_\infty=7$.
-Für $V^{-1}$ sind die Betragszeilensummen $1,4,2$, also $\|V^{-1}\|_\infty=4$.
-Damit ergibt sich:
-
-$$
-\boxed{\kappa_\infty(V)=7\cdot4=28}.
-$$
-
-
-```python
-kappa = np.linalg.cond(V, np.inf)
-```
-
-## Diagramme zu 1a und 1b
-
-- **1a – `1a_fehler_vandermonde.png`:** Maximaler Temperaturfehler von Vandermonde + Horner über dem Grad.
-- **1a – `1a_kondition.png`:** Konditionszahl der Vandermonde-Matrix über dem Grad.
-- **1b – `1b_fehlervergleich.png`:** Fehler beider Verfahren im gemeinsamen Diagramm.
-- **1b – `1b_abweichung_n20.png`:** Abweichungen von der exakten Temperatur über der Spannung bei Grad 20.
+Für jeden Grad vergleichen wir $p(E)$ auf dem Prüfraster mit der Referenztemperatur $T_\mathrm{exakt}(E)$. Aufgetragen ist $e_{\max}=\max_E|p(E)-T_\mathrm{exakt}(E)|$. Beide Verfahren erreichen im Versuch bei Grad 14 rund $0{,}123\,^\circ\mathrm{C}$ als kleinsten Fehler und liegen damit über dem Ziel von $0{,}1\,^\circ\mathrm{C}$. Bei Grad 20 zeigt die Abweichungskurve große Fehler in Randnähe. [Fehlervergleich](1b_fehlervergleich.png) · [Abweichungen bei Grad 20](1b_abweichung_n20.png) · [Konditionszahl](1a_kondition.png)

@@ -1,73 +1,32 @@
+# Aufgabe 3b – Wie stark wirkt sich die Rundung aus?
 
-Wir berechen das Polynom mit den gleichen Stützwerten mit der baryzentrischen Interpolation. Für die Temperatur bneutzen wir dabei aber einmal __den exakten Wert__ und einmal __den Kalibrator, der auf 0,01 °C gerundet ist__
-Dabei vergleichen wir auch __Äquidistante-__ und __Tschebyscheff-Stützstellen__ also gleichmäßig verteilte und rand-dichte.
+Wir verwenden dieselben Stützspannungen für zwei baryzentrische Kurven. $p_\mathrm{exakt}$ verwendet die exakten Temperaturen an den Stützstellen, $p_\mathrm{kal}$ die gerundeten Kalibratorwerte. So lässt sich getrennt untersuchen, was vom Polynom und was von den gerundeten Eingaben kommt.
 
-Wir vergleichen dann die Polynome und schauen uns nur die __maximale abweichung__ an. Das ist der Datenfehler (orange)
-(blaue) Kurve ist der Fehler zwischen Polynom aus exakten Stüzwerten und der tatsächlich echten Temperatur.
-(grün) Worst-Case Kurve. Lebesgue-Konstante aus Stützwerten * 0,005 °C
-
-Formel für die Lebesgue-Konstante auf dem Prüfraster:
+## Zwei Fehler auf demselben Prüfraster
 
 $$
-\Lambda_n^{(\mathrm{Raster})} = \max_{E\in\mathrm{Prüfraster}}
-\sum_{j=0}^{n}|\ell_j(E)|.
+\begin{aligned}
+e_\mathrm{interp}&=\max_E |p_\mathrm{exakt}(E)-T_\mathrm{exakt}(E)|,\\
+e_\mathrm{daten}&=\max_E |p_\mathrm{kal}(E)-p_\mathrm{exakt}(E)|.
+\end{aligned}
 $$
 
-$\ell_j(E)$ ist der Basiswert der $j$-ten Stützstelle an der Spannung $E$
+Der **Interpolationsfehler** entsteht beim Annähern der echten Temperaturkurve durch ein Polynom. Der **Datenfehler** entsteht durch die geänderten Temperaturen an den Stützstellen. Das Maximum nehmen wir jeweils über dasselbe Prüfraster.
 
-## Wiederverwendung der Funktionen aus Task 1
+## Wieso kann die Rundung so stark wirken?
 
-`main.py` lädt `../Task 1/main.py` mit `importlib.util` als Modul `task1`.
-Die Experimente aus Task 1 werden dabei nicht gestartet, da ihr Aufruf durch
-`if __name__ == "__main__"` geschützt ist.
-
-`task1.baryzentrische_gewichte(x)` berechnet die Gewichte einmal pro Stützstellensatz.
-Mit denselben Gewichten wertet `task1.baryzentrisch(...)` das Polynom sowohl für
-die exakten als auch für die gerundeten Temperaturen aus. Diese Funktionen
-werden direkt aus Task 1 übernommen und hier nicht erneut implementiert.
-Nur die Basiswerte zur Berechnung der Lebesgue-Konstante werden zusätzlich
-in Task 3b bestimmt.
-
-## => Woher kommt der Felher? Interpolation oder Rundung.
-
-# Aufgabe 3: Woher kommt der Fehler?
-
-Bei der Umrechnung von Thermospannung in Temperatur entstehen drei Fehleranteile:
-Das Polynom nähert die echte Kennlinie nur an (**3a: Interpolationsfehler**),
-der Kalibrator rundet die bekannten Temperaturen (**3b: Datenfehler**), und
-der Rechner rundet bei der Berechnung (**3c: Koeffizientenfehler**).
-
-## Datenfehler in 3b
-
-Der Kalibrator zeigt Temperaturen auf $0{,}01\,°C$ gerundet an. Jeder Stützwert
-weicht daher höchstens um $0{,}005\,°C$ vom exakten Wert ab. Wir bilden aus den
-exakten und den gerundeten Werten jeweils ein Interpolationspolynom. Ihre größte
-Abweichung auf dem Prüfraster ist der **Datenfehler**:
+Der Kalibrator rundet auf $0{,}01\,^\circ\mathrm{C}$. Die Rundungsabweichung $\Delta T_j$ beträgt also höchstens $0{,}005\,^\circ\mathrm{C}$ pro Stützstelle. Im Polynom werden diese Abweichungen mit den Lagrange-Basisfunktionen $\ell_j$ gewichtet.
 
 $$
-e_{\mathrm{daten}} = \max_E |p_{\mathrm{kalibrator}}(E)-p_{\mathrm{exakt}}(E)|.
+\begin{aligned}
+p_\mathrm{kal}(E)-p_\mathrm{exakt}(E)&=\sum_j \ell_j(E)\,\Delta T_j,\\
+\Lambda_\mathrm{Raster}&=\max_{E\ \text{im Prüfraster}}\sum_j|\ell_j(E)|,\\
+e_\mathrm{daten}&\le\Lambda_\mathrm{Raster}\cdot0{,}005\,^\circ\mathrm{C}.
+\end{aligned}
 $$
 
-Die **Lebesgue-Konstante** $\Lambda_n$ beschreibt, wie stark die Lage der
-Stützstellen kleine Datenfehler höchstens verstärken kann. Anders als $\pi$
-hat sie keinen festen Zahlenwert: Sie hängt von der Anzahl und der Lage der
-Stützstellen ab. Wir bestimmen sie näherungsweise mit der Formel oben.
-Zur Orientierung ergeben sich auf unserem Prüfraster ungefähr diese Werte:
+Die Lebesgue-Konstante $\Lambda_\mathrm{Raster}$ beschreibt hier die größtmögliche Verstärkung auf dem Prüfraster. Aus der baryzentrischen Formel in [Aufgabe 1](../Task%201/concept.md) folgt $\ell_j(E)=b_j(E)/\sum_i b_i(E)$ für $E$ abseits der Stützstellen. Genau an einer Stützstelle zählt nur der zugehörige Temperaturwert.
 
-| Polynomgrad | Äquidistant | Tschebyscheff |
-|---|---:|---:|
-| $n=10$ | $30$ | $2{,}44$ |
-| $n=20$ | $11\,000$ | $2{,}66$ |
+## Diagramme lesen
 
-Je größer $\Lambda_n$ ist, desto stärker *können* Rundungsfehler verstärkt
-werden. Für den Datenfehler gilt auf dem Prüfraster die Schranke
-
-$$
-e_{\mathrm{daten}} \leq \Lambda_n^{(\mathrm{Raster})}\cdot 0{,}005\,°C.
-$$
-
-Wir vergleichen äquidistante und Tschebyscheff-Stützstellen. Bei vielen
-äquidistanten Punkten kann der Datenfehler stark wachsen. Mit
-Tschebyscheff-Stützstellen bleibt er deutlich kleiner, verschwindet durch
-mehr Punkte aber nicht automatisch. Die berechnete Schranke bezieht sich
-auf das Prüfraster, nicht auf jeden Punkt des gesamten Intervalls.
+Die gestrichelte Linie zeigt die berechnete Obergrenze. Bei Grad 20 ist $\Lambda_\mathrm{Raster}$ ungefähr $11\,000$ für gleichmäßige Abstände und $2{,}66$ für Tschebyscheff. Der tatsächlich beobachtete Datenfehler liegt bei rund $11{,}1\,^\circ\mathrm{C}$ beziehungsweise $0{,}006\,^\circ\mathrm{C}$. Daran sieht man, wie stark die Lage der Stützstellen die Wirkung derselben Rundungsauflösung verändert. [Äquidistant](3b_aequidistant.png) · [Tschebyscheff](3b_tschebyscheff.png)

@@ -1,19 +1,31 @@
-Quadratur-Werkzeuge (Teil A)
-gauss_formel(N): Berechnet Stützstellen und Gewichte auf $[-1, 1]$ über den Golub-Welsch-Algorithmus (Eigenwertproblem der tridiagonalen Jacobi-Matrix).
-nc_formel(N): Berechnet Newton-Cotes-Gewichte für äquidistante Stützstellen durch Integration der Lagrange-Basispolynome (exakt ausgewertet via höhergradiger Gauß-Quadratur).
-transformiere() & quadratur(): Skaliert Stützstellen/Gewichte auf das Intervall $[0, 12]$ und führt die gewichtete Summation $\sum w_i y_i$ aus.
+# Aufgabe 4 – Kondensatorenergie aus möglichst wenigen Messungen
 
-Modell & Messdaten (Teil B)
-f_exakt() vs. f_gemessen(): Definiert den exakten Verlauf $f(v) = v \cdot C(v)$ und eine auf 2 Nachkommastellen gerundete Variante zur Simulation von Messdatenfehlern.
-W_EXAKT: Der analytisch berechnete Referenzwert ($320 \cdot \ln(3{,}25)$).
+## Von der Kapazität zur Energie
 
-Fehleranalyse (analisiere_verfahren)
-Evaluiert beide Verfahren für Stützstellenanzahlen $N \in [1, 15]$ und trennt den Gesamtfehler auf in:
-Verfahrensfehler: $\vert{}Q(f_{\text{exakt}}) - W_{\text{exakt}}\vert{}$ (Diskretisierungsfehler des Quadraturverfahrens).
-Datenfehler: $\vert{}Q(f_{\text{gemessen}}) - Q(f_{\text{exakt}})\vert{}$ (Auswirkung des Mess-/Rundungsfehlers).
-Gesamtfehler: $\vert{}Q(f_{\text{gemessen}}) - W_{\text{exakt}}\vert{}$.
+Die Kapazität $C(v)$ hängt von der Spannung $v$ ab. Zur Energie trägt jede kleine Spannungsänderung mit $vC(v)\,dv$ bei. Für $C$ in Mikrofarad und $v$ in Volt ergibt sich.
 
-Visualisierung & Auswertung
-Trägt die Fehlerverläufe logarithmisch über $N$ auf und vergleicht sie mit einer Ziel-Toleranz von $1\,\mu\text{J}$.
-Speichert die Grafiken mithilfe von pathlib im Ordner Task 2/aufgabe4_diagramm.png.
-Ermittelt und druckt die minimale Anzahl an Messpunkten $N$, die benötigt wird, um die Ziel-Toleranz einzuhalten.
+$$
+C(v)=\frac{10}{1+(v/8)^2},\qquad
+W=\int_0^{12}vC(v)\,dv=320\ln(3{,}25)\,\mu\mathrm{J}
+\approx377{,}17\,\mu\mathrm{J}.
+$$
+
+Für den exakten Wert setzen wir $u=1+(v/8)^2$. Damit ist $du=v\,dv/32$, und die Grenzen werden zu $1$ und $3{,}25$.
+
+Eine Messung kostet Zeit. Daher vergleichen wir die Verfahren aus [Aufgaben 1–3](../Task%201/concept.md) bei verschiedenen Anzahlen $N$ an Messpunkten. Das Messgerät liefert $C_\mathrm{mess}(v)$, gerundet auf $0{,}01\,\mu\mathrm{F}$. Aus denselben Stützstellen und Gewichten berechnen wir einmal $Q_\mathrm{exakt}=\sum_i w_i v_i C(v_i)$ und einmal $Q_\mathrm{mess}=\sum_i w_i v_i C_\mathrm{mess}(v_i)$.
+
+## Fehler auseinanderhalten
+
+| Kurve | Betrag | Bedeutung |
+| --- | --- | --- |
+| Grün | $\lvert Q_\mathrm{exakt}-W\rvert$ | Verfahrensfehler durch die Näherung |
+| Rot | $\lvert Q_\mathrm{mess}-Q_\mathrm{exakt}\rvert$ | Datenfehler durch die gerundeten Werte |
+| Blau | $\lvert Q_\mathrm{mess}-W\rvert$ | Gesamtfehler gegenüber der exakten Energie |
+
+Vor der Betragsbildung addieren sich Verfahrens- und Datenfehler. Haben sie verschiedene Vorzeichen, können sie sich teilweise aufheben.
+
+## Ergebnis und Garantie
+
+Die blaue Kurve unterschreitet $1\,\mu\mathrm{J}$ zuerst bei **3 Gauß-Punkten** ($0{,}425\,\mu\mathrm{J}$) und **5 Newton-Cotes-Punkten** ($0{,}366\,\mu\mathrm{J}$). [Diagramm](aufgabe4_diagramm.png)
+
+Jeder gerundete Kapazitätswert kann um höchstens $0{,}005\,\mu\mathrm{F}$ abweichen. Deshalb ist der Datenfehler höchstens $0{,}005\sum_i |w_i v_i|$. Bei diesen beiden Punktzahlen sind die Gewichte positiv und beide Formeln integrieren $v$ exakt, also ist die Summe $72$. Die Rundung trägt somit höchstens $0{,}36\,\mu\mathrm{J}$ bei. Zusammen mit dem Verfahrensfehler liegen die Obergrenzen bei etwa $0{,}838\,\mu\mathrm{J}$ für Gauß und $0{,}801\,\mu\mathrm{J}$ für Newton-Cotes. Unter diesem Messmodell reicht das für das Ziel.

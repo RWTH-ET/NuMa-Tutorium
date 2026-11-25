@@ -1,8 +1,3 @@
-"""
-Programmierprojekt 3 – Numerische Mathematik für Elektrotechnik (WS 2026/27)
-Teil A (Aufgaben 1–3): Quadraturformeln implementieren und testen
-"""
-
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,9 +6,6 @@ ORDNER = Path(__file__).resolve().parent
 TASK_1 = ORDNER.parent / "Task 1"
 
 
-# =============================================================================
-# 1. Schnittstellen der Quadraturformeln (vgl. Folie 3)
-# =============================================================================
 
 def _berechne_gauss_formel(N: int) -> tuple[np.ndarray, np.ndarray]:
     """
@@ -25,21 +17,16 @@ def _berechne_gauss_formel(N: int) -> tuple[np.ndarray, np.ndarray]:
     if N == 1:
         return np.array([0.0]), np.array([2.0])
 
-    # Nebendiagonalelemente: beta_k = (4 - k^(-2))^(-1/2) für k = 1, ..., N-1
     k = np.arange(1, N, dtype=float)
     beta = (4.0 - k ** (-2)) ** (-0.5)
 
-    # Symmetrische Tridiagonalmatrix J mit Nullen auf der Hauptdiagonale
     J = np.diag(beta, k=-1) + np.diag(beta, k=1)
 
-    # Eigenwerte = Stützstellen, 2 * (1. Komponente der Eigenvektoren)^2 = Gewichte
     eigvals, eigvecs = np.linalg.eigh(J)
     x_hat = eigvals
     w_hat = 2.0 * (eigvecs[0, :] ** 2)
     return x_hat, w_hat
 
-
-# Vorabberechnung für N = 1, ..., 48 (Aufgabe 1: 1..40, Aufgabe 3 benötigt bis 48)
 GAUSS_CACHE: dict[int, tuple[np.ndarray, np.ndarray]] = {
     N: _berechne_gauss_formel(N) for N in range(1, 49)
 }
@@ -62,8 +49,6 @@ def _lagrange_baryzentrisch(x_nodes: np.ndarray, x_eval: np.ndarray) -> np.ndarr
     N = len(x_nodes)
     M_eval = len(x_eval)
 
-    # Baryzentrische Gewichte: lambda_i = 1 / prod_{j != i} (x_i - x_j)
-    # Skalierung verhindert Über-/Unterlauf für großes N
     scale = 0.5 * (N - 1) if N > 1 else 1.0
     x_scaled = x_nodes * scale
     bary_w = np.empty(N, dtype=float)
@@ -97,7 +82,6 @@ def nc_formel(N: int) -> tuple[np.ndarray, np.ndarray]:
 
     x_hat = np.linspace(-1.0, 1.0, N)
 
-    # l_i hat Grad N - 1 -> Gauß-Formel mit ceil(N / 2) Punkten integriert l_i exakt
     N_gauss = max(1, (N + 1) // 2)
     x_g, w_g = gauss_formel(N_gauss)
 
@@ -156,7 +140,6 @@ def summierte_formel(
                 w_ges[start + 1 : start + N] = w_sub[1:]
         return x_ges, w_ges
 
-    # Offene Formel (z. B. Gauß-Legendre)
     x_liste, w_liste = [], []
     for j in range(M):
         x_sub, w_sub = transformiere(
@@ -187,18 +170,11 @@ def exaktheitsgrad(x_hat: np.ndarray, w_hat: np.ndarray, tol: float = 1e-12) -> 
     return k - 1
 
 
-# =============================================================================
-# 2. Auswertung & Plots für Aufgaben 1, 2 und 3
-# =============================================================================
-
 def main() -> None:
     # Zielordner "Task 1" (parallel zum Skriptordner) sicherstellen
     TASK_1.mkdir(parents=True, exist_ok=True)
     tol = 1e-12
 
-    # -------------------------------------------------------------------------
-    # Aufgabe 1: Gauß-Legendre (N = 1, ..., 40)
-    # -------------------------------------------------------------------------
     N_gauss_werte = np.arange(1, 41)
     exakt_gauss = np.array(
         [exaktheitsgrad(*gauss_formel(int(N)), tol=tol) for N in N_gauss_werte]
@@ -230,9 +206,6 @@ def main() -> None:
     fig1.savefig(TASK_1 / "aufgabe1_gauss_legendre.png", dpi=300, bbox_inches="tight")
     plt.show()
 
-    # -------------------------------------------------------------------------
-    # Aufgabe 2: Newton-Cotes ergänzen (N = 2, ..., 40)
-    # -------------------------------------------------------------------------
     N_nc_werte = np.arange(2, 41)
     exakt_nc = np.array(
         [exaktheitsgrad(*nc_formel(int(N)), tol=tol) for N in N_nc_werte]
@@ -275,9 +248,6 @@ def main() -> None:
     fig2.savefig(TASK_1 / "aufgabe2_vergleich_gauss_nc.png", dpi=300, bbox_inches="tight")
     plt.show()
 
-    # -------------------------------------------------------------------------
-    # Aufgabe 3: Summierte Quadratur auf [0, 1] mit Budget <= 48 Auswertungen
-    # -------------------------------------------------------------------------
     budget = 48
     a, b = 0.0, 1.0
 
@@ -295,11 +265,9 @@ def main() -> None:
         ),
     ]
 
-    # Gauß: M * N <= 48  =>  M = floor(48 / N)
     N_g_list = np.arange(1, budget + 1)
     M_g_list = budget // N_g_list
 
-    # Newton-Cotes (gemeinsame Randpunkte einmal): M*(N - 1) + 1 <= 48  =>  M = floor(47 / (N - 1))
     N_nc_list = np.arange(2, budget + 1)
     M_nc_list = (budget - 1) // (N_nc_list - 1)
 
